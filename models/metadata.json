@@ -1,0 +1,27 @@
+{
+  "model_name": "RandomForest",
+  "scenario": "S4_All",
+  "test_accuracy": 0.9600886917960089,
+  "class_names": [
+    "ALGAL_LEAF_SPOT",
+    "ALLOCARIDARA_ATTACK",
+    "HEALTHY_LEAF",
+    "LEAF_BLIGHT",
+    "PHOMOPSIS_LEAF_SPOT"
+  ],
+  "best_params": {
+    "n_estimators": "300",
+    "max_features": "sqrt",
+    "max_depth": "None"
+  },
+  "n_features_in": 1526,
+  "n_features_sel": 1526,
+  "scaler_type": "RobustScaler",
+  "feature_types": [
+    "LBP_54",
+    "GLCM_72",
+    "Gabor_24",
+    "ColorHist_96",
+    "EfficientNet_1280"
+  ]
+}
