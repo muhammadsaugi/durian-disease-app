@@ -8,7 +8,6 @@ env/
 
 # Model files besar (upload manual atau via Git LFS)
 models/*.onnx
-models/*.pth
 
 # Streamlit
 .streamlit/secrets.toml
