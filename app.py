@@ -1,6 +1,6 @@
 """
-🌿 Sistem Deteksi Penyakit Daun Durian
-Akurasi: 96.23% | Model: RandomForest/SVM + EfficientNet Fine-tuned + SelectKBest
+🌿 Durian Leaf Disease Detection System
+Accuracy: 96.23% | Model: RandomForest/SVM + EfficientNet-B0 Fine-tuned + SelectKBest
 """
 
 import streamlit as st
@@ -13,14 +13,13 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('Agg')
-import seaborn as sns
 from io import BytesIO
 import warnings
 warnings.filterwarnings('ignore')
 
 # ── Page Config ───────────────────────────────────────────────
 st.set_page_config(
-    page_title="DurianAI — Deteksi Penyakit Daun Durian",
+    page_title="DurianAI — Durian Leaf Disease Detection",
     page_icon="🌿",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -32,298 +31,186 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-    --forest:   #0d2b1a;
-    --emerald:  #1a5c38;
-    --jade:     #2d8653;
-    --mint:     #52c47a;
-    --pale:     #e8f7ee;
-    --cream:    #fafdf7;
-    --gold:     #d4a017;
-    --coral:    #e05c3a;
-    --rust:     #8b3a1f;
-    --text:     #0d1f14;
-    --muted:    #4a6b56;
-    --border:   #c5e0cc;
-    --shadow:   0 4px 32px rgba(13,43,26,.12);
-    --r:        14px;
+    --forest:  #0d2b1a; --emerald: #1a5c38; --jade: #2d8653;
+    --pale:    #e8f7ee; --cream:   #fafdf7;
+    --gold:    #d4a017; --coral:   #e05c3a;
+    --text:    #0d1f14; --muted:   #4a6b56;
+    --border:  #c5e0cc; --shadow:  0 4px 32px rgba(13,43,26,.12);
+    --r:       14px;
 }
-
 html, body, [class*="css"] {
     font-family: 'DM Sans', sans-serif !important;
     background: var(--cream) !important;
     color: var(--text) !important;
 }
-
-/* ── HEADER ── */
 .hero {
     background: linear-gradient(135deg, var(--forest) 0%, var(--emerald) 55%, var(--jade) 100%);
-    border-radius: 20px;
-    padding: 2.8rem 3.2rem 2.4rem;
-    margin-bottom: 2rem;
-    position: relative;
-    overflow: hidden;
+    border-radius: 20px; padding: 2.6rem 3rem 2.2rem;
+    margin-bottom: 1.5rem; position: relative; overflow: hidden;
 }
 .hero::before {
-    content: '🌿';
-    position: absolute;
-    font-size: 11rem;
-    right: -1rem; top: -2rem;
-    opacity: .07;
-    line-height: 1;
-}
-.hero::after {
-    content: '';
-    position: absolute;
-    width: 320px; height: 320px;
-    border-radius: 50%;
-    background: rgba(255,255,255,.04);
-    bottom: -120px; left: -60px;
+    content: '🌿'; position: absolute; font-size: 10rem;
+    right: -1rem; top: -1.5rem; opacity: .07; line-height: 1;
 }
 .hero-title {
     font-family: 'DM Serif Display', serif !important;
-    font-size: 2.5rem !important;
-    color: #fff !important;
-    margin: 0 0 .4rem 0 !important;
-    line-height: 1.15 !important;
-    letter-spacing: -.5px;
+    font-size: 2.4rem !important; color: #fff !important;
+    margin: 0 0 .35rem 0 !important; line-height: 1.15 !important; letter-spacing: -.5px;
 }
-.hero-sub {
-    color: rgba(255,255,255,.75);
-    font-size: .95rem;
-    margin: 0 0 1.2rem 0;
-    font-weight: 400;
-}
+.hero-sub { color: rgba(255,255,255,.78); font-size: .92rem; margin: 0 0 1.1rem 0; }
 .hero-badges { display: flex; gap: 8px; flex-wrap: wrap; }
 .badge {
-    background: rgba(255,255,255,.15);
-    border: 1px solid rgba(255,255,255,.22);
-    color: #fff;
-    padding: 4px 14px;
-    border-radius: 100px;
-    font-size: .75rem;
-    font-weight: 600;
-    letter-spacing: .3px;
-    backdrop-filter: blur(4px);
+    background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.22);
+    color: #fff; padding: 4px 13px; border-radius: 100px;
+    font-size: .73rem; font-weight: 600; letter-spacing: .3px;
 }
-
-/* ── METRIC CARDS ── */
-.metrics-row { display: flex; gap: 12px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.metrics-row { display: flex; gap: 10px; margin-bottom: 1.4rem; flex-wrap: wrap; }
 .metric-card {
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: var(--r);
-    padding: 1rem 1.4rem;
-    flex: 1; min-width: 120px;
-    box-shadow: var(--shadow);
-    transition: transform .18s;
+    background: #fff; border: 1px solid var(--border);
+    border-radius: var(--r); padding: .9rem 1.3rem;
+    flex: 1; min-width: 115px; box-shadow: var(--shadow);
 }
-.metric-card:hover { transform: translateY(-2px); }
 .metric-card .m-val {
     font-family: 'DM Serif Display', serif;
-    font-size: 1.9rem;
-    color: var(--emerald);
-    line-height: 1;
-    margin-bottom: 2px;
+    font-size: 1.8rem; color: var(--emerald); line-height: 1; margin-bottom: 2px;
 }
 .metric-card .m-lbl {
-    font-size: .72rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--muted);
-    font-weight: 600;
+    font-size: .68rem; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--muted); font-weight: 700;
 }
-.metric-card .m-sub { font-size: .75rem; color: var(--muted); margin-top: 2px; }
-
-/* ── RESULT BOX ── */
-.result-card {
-    background: linear-gradient(135deg, var(--forest), var(--emerald));
-    border-radius: 18px;
-    padding: 2rem 2.2rem;
-    color: #fff;
-    text-align: center;
-    box-shadow: 0 8px 40px rgba(13,43,26,.28);
-    margin-bottom: 1rem;
+.metric-card .m-sub { font-size: .72rem; color: var(--muted); margin-top: 2px; }
+.prob-wrap { margin: .6rem 0; }
+.prob-row { display: flex; align-items: center; gap: 9px; margin: 5px 0; }
+.prob-lbl { font-size: .78rem; font-weight: 600; width: 168px; flex-shrink: 0; color: var(--text); }
+.prob-bg { flex: 1; height: 8px; background: var(--pale); border-radius: 4px; overflow: hidden; }
+.prob-fill { height: 100%; border-radius: 4px; }
+.prob-pct {
+    font-size: .76rem; font-weight: 700; width: 42px; text-align: right;
+    color: var(--muted); font-family: 'JetBrains Mono', monospace;
 }
-.result-icon { font-size: 3rem; margin-bottom: .5rem; }
-.result-tag {
-    font-size: .72rem; text-transform: uppercase; letter-spacing: 1.5px;
-    opacity: .7; margin-bottom: .3rem; font-weight: 600;
-}
-.result-name {
-    font-family: 'DM Serif Display', serif;
-    font-size: 1.55rem; line-height: 1.2; margin-bottom: .2rem;
-}
-.result-en { font-size: .82rem; opacity: .65; margin-bottom: 1.2rem; }
-.result-conf {
-    font-family: 'DM Serif Display', serif;
-    font-size: 3.2rem; color: #7dffa8; line-height: 1;
-}
-.result-conf-lbl { font-size: .78rem; opacity: .7; margin-top: .2rem; }
-.sev-chip {
-    display: inline-block;
-    margin-top: 1rem; padding: 5px 16px;
-    border-radius: 100px;
-    font-size: .75rem; font-weight: 700;
-    background: rgba(255,255,255,.15);
-    border: 1px solid rgba(255,255,255,.2);
-}
-
-/* ── PROB BARS ── */
-.prob-wrap { margin: .8rem 0; }
-.prob-row { display: flex; align-items: center; gap: 10px; margin: 5px 0; }
-.prob-lbl { font-size: .8rem; font-weight: 600; width: 160px; flex-shrink: 0; color: var(--text); }
-.prob-bg { flex: 1; height: 9px; background: var(--pale); border-radius: 5px; overflow: hidden; }
-.prob-fill { height: 100%; border-radius: 5px; transition: width .5s ease; }
-.prob-pct { font-size: .78rem; font-weight: 700; width: 44px; text-align: right;
-             color: var(--muted); font-family: 'JetBrains Mono', monospace; }
-
-/* ── DISEASE CARD ── */
 .disease-panel {
-    background: #fff;
-    border-radius: var(--r);
-    padding: 1.5rem;
-    box-shadow: var(--shadow);
-    border-left: 5px solid var(--jade);
-    margin-bottom: 1rem;
+    background: #fff; border-radius: var(--r); padding: 1.4rem;
+    box-shadow: var(--shadow); border-left: 5px solid var(--jade);
 }
-.disease-panel.warn { border-left-color: var(--gold); }
-.disease-panel.danger { border-left-color: var(--coral); }
+.disease-panel.moderate { border-left-color: var(--gold); }
+.disease-panel.high     { border-left-color: var(--coral); }
 .disease-panel h4 {
-    font-family: 'DM Serif Display', serif;
-    font-size: 1.1rem; margin: 0 0 .8rem 0;
+    font-family: 'DM Serif Display', serif; font-size: 1.05rem; margin: 0 0 .75rem 0;
 }
-.disease-panel p { font-size: .875rem; color: var(--muted); line-height: 1.75; margin: .35rem 0; }
+.disease-panel p { font-size: .86rem; color: var(--muted); line-height: 1.75; margin: .35rem 0; }
 .disease-panel strong { color: var(--text); }
 .treat-item {
     display: flex; align-items: flex-start; gap: 8px;
-    padding: 6px 0; border-bottom: 1px solid #f0f4f1;
-    font-size: .875rem; color: var(--text); line-height: 1.5;
+    padding: 5px 0; border-bottom: 1px solid #f0f4f1;
+    font-size: .85rem; color: var(--text); line-height: 1.5;
 }
-.treat-icon { color: var(--jade); font-weight: 800; flex-shrink: 0; margin-top: 1px; }
-
-/* ── SECTION TITLE ── */
+.treat-ok { color: var(--jade); font-weight: 800; flex-shrink: 0; }
 .sec-title {
-    font-size: .7rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 2px; color: var(--muted); margin: 2rem 0 .8rem 0;
-    display: flex; align-items: center; gap: 10px;
+    font-size: .68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 2px; color: var(--muted);
+    margin: 1.8rem 0 .8rem 0; display: flex; align-items: center; gap: 10px;
 }
 .sec-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
-/* ── UPLOAD ZONE ── */
+.guide-card {
+    background: #fff; border: 1px solid var(--border);
+    border-radius: var(--r); padding: 1.3rem;
+    box-shadow: var(--shadow); text-align: center;
+}
+.guide-icon { font-size: 2rem; margin-bottom: .6rem; }
+.guide-title { font-weight: 700; font-size: .92rem; margin-bottom: .35rem; color: var(--text); }
+.guide-desc { font-size: .8rem; color: var(--muted); line-height: 1.6; }
 [data-testid="stFileUploadDropzone"] {
     background: var(--pale) !important;
     border: 2px dashed var(--jade) !important;
     border-radius: var(--r) !important;
 }
-
-/* ── SIDEBAR ── */
 [data-testid="stSidebar"] { background: var(--forest) !important; }
 [data-testid="stSidebar"] * { color: rgba(255,255,255,.88) !important; }
-[data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { color: #7dffa8 !important; }
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 { color: #7dffa8 !important; }
 [data-testid="stSidebar"] hr { border-color: rgba(255,255,255,.12) !important; }
-
-/* ── GUIDE CARDS ── */
-.guide-card {
-    background: #fff; border: 1px solid var(--border);
-    border-radius: var(--r); padding: 1.4rem;
-    box-shadow: var(--shadow); text-align: center;
-    transition: transform .18s, box-shadow .18s;
-}
-.guide-card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(13,43,26,.16); }
-.guide-icon { font-size: 2.2rem; margin-bottom: .7rem; }
-.guide-title { font-weight: 700; font-size: .95rem; margin-bottom: .4rem; color: var(--text); }
-.guide-desc { font-size: .82rem; color: var(--muted); line-height: 1.6; }
-
-/* ── TABLE ── */
-.stDataFrame { border-radius: var(--r) !important; overflow: hidden; }
-
-/* ── MISC ── */
 #MainMenu { visibility: hidden; }
 footer { visibility: hidden; }
 .stDeployButton { display: none; }
 .stAlert { border-radius: var(--r) !important; }
+.stDataFrame { border-radius: var(--r) !important; overflow: hidden; }
 </style>
 """, unsafe_allow_html=True)
 
-# ── Disease Database ──────────────────────────────────────────
+# ── Disease Database (English) ────────────────────────────────
 DISEASE_DB = {
     "ALGAL_LEAF_SPOT": {
-        "name_id"   : "Bercak Daun Alga",
-        "name_en"   : "Algal Leaf Spot",
+        "name"      : "Algal Leaf Spot",
         "pathogen"  : "Cephaleuros virescens",
-        "severity"  : "Sedang", "sev_class": "warn",
+        "severity"  : "Moderate", "sev_class": "moderate",
         "emoji"     : "🔴", "color": "#e07a3a",
-        "symptoms"  : "Bercak bulat oranye-kehijauan pada permukaan daun. Bercak dapat bergabung membentuk area kerusakan luas. Daun yang terinfeksi berat menguning dan gugur lebih awal.",
-        "cause"     : "Kondisi lembab dan hangat, sering terjadi di musim hujan. Tanaman dengan drainase buruk lebih rentan.",
+        "symptoms"  : "Circular orange-greenish spots on the leaf surface. Spots may merge into larger damaged areas. Heavily infected leaves turn yellow and drop prematurely.",
+        "cause"     : "Warm and humid conditions, common during rainy seasons. Plants with poor drainage are more susceptible.",
         "treatment" : [
-            "Semprot fungisida berbahan tembaga (copper hydroxide)",
-            "Pangkas daun yang terinfeksi berat dan musnahkan",
-            "Perbaiki sirkulasi udara di sekitar tanaman",
-            "Hindari penyiraman berlebih dan percikan air ke daun",
+            "Apply copper-based fungicide (copper hydroxide)",
+            "Prune and destroy heavily infected leaves",
+            "Improve air circulation around the plant",
+            "Avoid over-irrigation and water splashing onto leaves",
         ],
-        "prevention": "Jaga kebersihan kebun, buang daun gugur, pastikan drainase baik.",
+        "prevention": "Maintain orchard sanitation, remove fallen leaves, ensure good drainage.",
     },
     "ALLOCARIDARA_ATTACK": {
-        "name_id"   : "Serangan Penggerek Pucuk",
-        "name_en"   : "Allocaridara Attack",
+        "name"      : "Allocaridara Attack",
         "pathogen"  : "Allocaridara malayensis",
-        "severity"  : "Tinggi", "sev_class": "danger",
+        "severity"  : "High", "sev_class": "high",
         "emoji"     : "🐛", "color": "#c03a2a",
-        "symptoms"  : "Kerusakan tepi dan permukaan daun akibat larva. Daun berlubang, terpotong tidak beraturan, atau menggulung. Pucuk muda menjadi target utama.",
-        "cause"     : "Infestasi serangga Allocaridara malayensis. Lebih sering di musim kemarau atau saat tanaman dalam fase pertumbuhan aktif.",
+        "symptoms"  : "Damage on leaf edges and surfaces caused by larvae. Leaves appear holed, irregularly cut, or rolled. Young shoots are the primary target.",
+        "cause"     : "Infestation by Allocaridara malayensis insects. More frequent during dry seasons or active growth phases.",
         "treatment" : [
-            "Insektisida sistemik (imidakloprid atau klorantraniliprol)",
-            "Kumpulkan dan musnahkan larva secara manual",
-            "Pasang perangkap feromon di sekitar kebun",
-            "Manfaatkan musuh alami seperti parasitoid",
+            "Apply systemic insecticide (imidacloprid or chlorantraniliprole)",
+            "Manually collect and destroy larvae",
+            "Install pheromone traps around the orchard",
+            "Utilize natural enemies such as parasitoids",
         ],
-        "prevention": "Pantau pucuk muda secara rutin. Jaga kebersihan lingkungan kebun.",
+        "prevention": "Regularly monitor young shoots. Maintain clean orchard environment.",
     },
     "HEALTHY_LEAF": {
-        "name_id"   : "Daun Sehat",
-        "name_en"   : "Healthy Leaf",
-        "pathogen"  : "Tidak ada patogen",
-        "severity"  : "Normal", "sev_class": "",
+        "name"      : "Healthy Leaf",
+        "pathogen"  : "No pathogen detected",
+        "severity"  : "Normal", "sev_class": "normal",
         "emoji"     : "✅", "color": "#2d8653",
-        "symptoms"  : "Daun hijau merata, permukaan mengkilap, tidak ada bercak atau perubahan warna abnormal. Bentuk daun sempurna sesuai morfologi tanaman durian.",
-        "cause"     : "Tanaman dalam kondisi sehat dan terawat dengan baik.",
+        "symptoms"  : "Uniform green color, glossy surface, no spots or abnormal discoloration. Leaf shape is perfect and consistent with durian morphology.",
+        "cause"     : "Plant is in healthy and well-maintained condition.",
         "treatment" : [
-            "Pertahankan rutinitas perawatan yang sudah dilakukan",
-            "Lanjutkan pemupukan berimbang (N-P-K)",
-            "Monitoring berkala untuk deteksi dini penyakit",
+            "Maintain current care routine",
+            "Continue balanced fertilization (N-P-K)",
+            "Conduct regular monitoring for early disease detection",
         ],
-        "prevention": "Pupuk berimbang, irigasi cukup, sanitasi kebun rutin.",
+        "prevention": "Balanced fertilization, adequate irrigation, routine orchard sanitation.",
     },
     "LEAF_BLIGHT": {
-        "name_id"   : "Hawar Daun",
-        "name_en"   : "Leaf Blight",
+        "name"      : "Leaf Blight",
         "pathogen"  : "Phytophthora palmivora / Rhizoctonia solani",
-        "severity"  : "Tinggi", "sev_class": "danger",
+        "severity"  : "High", "sev_class": "high",
         "emoji"     : "🍂", "color": "#7a3010",
-        "symptoms"  : "Bercak coklat besar tidak beraturan yang meluas cepat. Area terinfeksi menjadi kering dan rapuh. Infeksi berat dapat mematikan seluruh daun dalam beberapa hari.",
-        "cause"     : "Jamur/oomycete yang berkembang pada kondisi basah. Menyebar melalui percikan air hujan dan luka pada daun.",
+        "symptoms"  : "Large irregular brown spots that spread rapidly. Infected areas become dry and brittle. Severe infection can kill the entire leaf within a few days.",
+        "cause"     : "Fungal/oomycete pathogens thriving in wet conditions. Spreads through rain splashing and leaf wounds.",
         "treatment" : [
-            "Fungisida metalaksil atau mankozeb segera",
-            "Potong dan bakar bagian terinfeksi secepatnya",
-            "Kurangi kelembaban dengan pemangkasan kanopi",
-            "Fungisida sistemik jika infeksi sudah meluas",
+            "Apply metalaxyl or mancozeb fungicide immediately",
+            "Cut and burn infected parts as quickly as possible",
+            "Reduce humidity by thinning the canopy",
+            "Use systemic fungicide if infection has spread widely",
         ],
-        "prevention": "Hindari luka mekanis. Aplikasi fungisida preventif di musim hujan.",
+        "prevention": "Avoid mechanical damage. Apply preventive fungicide during rainy season.",
     },
     "PHOMOPSIS_LEAF_SPOT": {
-        "name_id"   : "Bercak Daun Phomopsis",
-        "name_en"   : "Phomopsis Leaf Spot",
+        "name"      : "Phomopsis Leaf Spot",
         "pathogen"  : "Phomopsis durionis",
-        "severity"  : "Sedang", "sev_class": "warn",
+        "severity"  : "Moderate", "sev_class": "moderate",
         "emoji"     : "🟤", "color": "#7d5a3c",
-        "symptoms"  : "Bercak kecil-sedang berwarna coklat gelap dengan tepi kuning. Berbentuk bulat atau lonjong. Pada kondisi lembab terlihat massa spora hitam di tengah bercak.",
-        "cause"     : "Jamur Phomopsis yang masuk melalui luka atau stomata. Berkembang pada kondisi lembab suhu 20–30°C.",
+        "symptoms"  : "Small to medium dark brown spots with yellow margins. Spots are round or oval. In humid conditions, black spore masses may appear at the center of spots.",
+        "cause"     : "Phomopsis fungus entering through wounds or stomata. Develops in humid conditions at 20–30°C.",
         "treatment" : [
-            "Fungisida difenokonazol atau propikonazol",
-            "Pangkas daun bergejala berat",
-            "Semprot pagi hari agar daun kering sebelum sore",
+            "Apply difenoconazole or propiconazole fungicide",
+            "Prune leaves showing severe symptoms",
+            "Spray in the morning to allow leaves to dry before evening",
         ],
-        "prevention": "Rotasi fungisida untuk mencegah resistensi. Sirkulasi udara yang baik.",
+        "prevention": "Rotate fungicides to prevent resistance. Maintain good air circulation.",
     },
 }
 
@@ -331,26 +218,24 @@ CLASS_NAMES = [
     "ALGAL_LEAF_SPOT", "ALLOCARIDARA_ATTACK", "HEALTHY_LEAF",
     "LEAF_BLIGHT", "PHOMOPSIS_LEAF_SPOT"
 ]
-COLORS = [DISEASE_DB[c]["color"] for c in CLASS_NAMES]
-
-# ── Feature Extraction Constants ──────────────────────────────
-IMG_SIZE_HC  = 128
-LBP_CONFIGS  = [{"radius":1,"n_points":8},{"radius":2,"n_points":16},{"radius":3,"n_points":24}]
-GLCM_DIST    = [1, 3, 5]
-GLCM_ANGLES  = [0, np.pi/4, np.pi/2, 3*np.pi/4]
-GLCM_PROPS   = ["contrast","dissimilarity","homogeneity","energy","correlation","ASM"]
-GABOR_FREQS  = [0.1, 0.3, 0.5]
-GABOR_THETA  = [0, np.pi/4, np.pi/2, 3*np.pi/4]
-HIST_BINS    = 32
+SEV_LABEL = {"normal": "Normal", "moderate": "Moderate", "high": "High"}
 
 # ── Feature Extraction ────────────────────────────────────────
+IMG_SIZE_HC = 128
+LBP_CONFIGS = [{"radius":1,"n_points":8},{"radius":2,"n_points":16},{"radius":3,"n_points":24}]
+GLCM_DIST   = [1, 3, 5]
+GLCM_ANGLES = [0, np.pi/4, np.pi/2, 3*np.pi/4]
+GLCM_PROPS  = ["contrast","dissimilarity","homogeneity","energy","correlation","ASM"]
+GABOR_FREQS = [0.1, 0.3, 0.5]
+GABOR_THETA = [0, np.pi/4, np.pi/2, 3*np.pi/4]
+HIST_BINS   = 32
+
 def preprocess(img_bgr, size=IMG_SIZE_HC):
-    img  = cv2.resize(img_bgr, (size, size))
-    hsv  = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    cl   = cv2.createCLAHE(2.0, (8, 8))
-    hsv[:,:,2] = cl.apply(hsv[:,:,2])
-    enh  = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-    blr  = cv2.GaussianBlur(enh, (3,3), 1)
+    img = cv2.resize(img_bgr, (size, size))
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    cl  = cv2.createCLAHE(2.0, (8, 8)); hsv[:,:,2] = cl.apply(hsv[:,:,2])
+    enh = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+    blr = cv2.GaussianBlur(enh, (3,3), 1)
     return cv2.cvtColor(blr, cv2.COLOR_BGR2GRAY), cv2.cvtColor(blr, cv2.COLOR_BGR2HSV)
 
 def extract_lbp(g):
@@ -365,23 +250,18 @@ def extract_lbp(g):
 
 def extract_glcm(g):
     from skimage.feature import graycomatrix, graycoprops
-    f  = []
-    iq = (g//4).astype(np.uint8)
-    gl = graycomatrix(iq, distances=GLCM_DIST, angles=GLCM_ANGLES,
-                       levels=64, symmetric=True, normed=True)
-    for p in GLCM_PROPS:
-        f.extend(graycoprops(gl, p).flatten())
+    f  = []; iq = (g//4).astype(np.uint8)
+    gl = graycomatrix(iq, distances=GLCM_DIST, angles=GLCM_ANGLES, levels=64, symmetric=True, normed=True)
+    for p in GLCM_PROPS: f.extend(graycoprops(gl, p).flatten())
     return np.array(f)
 
 def extract_gabor(g):
     from skimage.filters import gabor
-    f  = []
-    gf = g.astype(float)/255.0
+    f = []; gf = g.astype(float)/255.0
     for freq in GABOR_FREQS:
         for theta in GABOR_THETA:
             r, i = gabor(gf, frequency=freq, theta=theta)
-            m    = np.sqrt(r**2+i**2)
-            f   += [m.mean(), m.std()]
+            m    = np.sqrt(r**2+i**2); f += [m.mean(), m.std()]
     return np.array(f)
 
 def extract_color(h):
@@ -406,125 +286,75 @@ def load_artifacts():
         with open(os.path.join(model_dir, "selector.pkl"),   "rb") as f: arts["selector"] = pickle.load(f)
         arts["model_type"] = type(arts["model"]).__name__
         arts["has_proba"]  = hasattr(arts["model"], "predict_proba")
-
-        # ── Deteksi berapa fitur yang diharapkan scaler ───────
-        # n_features_in_ = jumlah fitur saat scaler.fit()
         if hasattr(arts["scaler"], "n_features_in_"):
             arts["expected_features"] = int(arts["scaler"].n_features_in_)
         else:
-            # Fallback: coba dari shape center_
-            try:
-                arts["expected_features"] = int(arts["scaler"].center_.shape[0])
-            except Exception:
-                arts["expected_features"] = 1526  # default v3
-
-        arts["n_hc"]  = 246   # LBP(54)+GLCM(72)+Gabor(24)+Color(96)
-        arts["n_cnn"] = arts["expected_features"] - arts["n_hc"]  # biasanya 1280
-
+            try:    arts["expected_features"] = int(arts["scaler"].center_.shape[0])
+            except: arts["expected_features"] = 1526
+        arts["n_hc"] = 246; arts["n_cnn"] = arts["expected_features"] - 246
         arts["ok"] = True
-
-        # ── Load CNN (wajib jika expected_features > 246) ─────
         pth = os.path.join(model_dir, "efficientnet_state_dict.pth")
         if arts["n_cnn"] > 0 and os.path.exists(pth):
             _load_cnn(arts, pth)
-        elif arts["n_cnn"] > 0 and not os.path.exists(pth):
+        elif arts["n_cnn"] > 0:
             arts["cnn_error"] = (
-                f"❌ File `efficientnet_state_dict.pth` tidak ditemukan di folder `models/`. "
-                f"Scaler mengharapkan {arts['expected_features']} fitur "
-                f"({arts['n_hc']} HC + {arts['n_cnn']} CNN), "
-                f"tapi CNN extractor tidak bisa dimuat."
-            )
+                f"❌ `efficientnet_state_dict.pth` not found in `models/` folder. "
+                f"Scaler expects {arts['expected_features']} features "
+                f"({arts['n_hc']} handcrafted + {arts['n_cnn']} CNN). "
+                f"Please upload the CNN extractor file to GitHub.")
         else:
-            # Scaler dilatih hanya dengan HC (246 fitur) — tidak butuh CNN
             arts["use_cnn"] = False
-
     except Exception as e:
         arts["error"] = str(e)
     return arts
 
-
 def _load_cnn(arts, pth_path):
     try:
         import torch, torch.nn as nn
-        import torchvision.models as models
-        import torchvision.transforms as T
-
-        state_dict = torch.load(pth_path, map_location="cpu",
-                                 weights_only=False)
+        import torchvision.models as models, torchvision.transforms as T
+        state_dict = torch.load(pth_path, map_location="cpu", weights_only=False)
         first_key  = list(state_dict.keys())[0]
         base = models.efficientnet_b0(weights=None)
-
         if first_key[0].isdigit():
-            # State dict dari nn.Sequential extractor langsung
             seq = nn.Sequential(base.features, base.avgpool, nn.Flatten())
-            seq.load_state_dict(state_dict, strict=True)
-            arts["cnn"] = seq.eval()
+            seq.load_state_dict(state_dict, strict=True); arts["cnn"] = seq.eval()
         else:
-            # State dict dari model EfficientNet penuh
             in_f = base.classifier[1].in_features
             base.classifier = nn.Sequential(
-                nn.Dropout(.4), nn.Linear(in_f, 512), nn.ReLU(),
-                nn.Dropout(.3), nn.Linear(512, len(CLASS_NAMES))
-            )
+                nn.Dropout(.4), nn.Linear(in_f,512), nn.ReLU(),
+                nn.Dropout(.3), nn.Linear(512, len(CLASS_NAMES)))
             base.load_state_dict(state_dict, strict=True)
-            arts["cnn"] = nn.Sequential(
-                base.features, base.avgpool, nn.Flatten()
-            ).eval()
-
+            arts["cnn"] = nn.Sequential(base.features, base.avgpool, nn.Flatten()).eval()
         arts["cnn_transform"] = T.Compose([
-            T.Resize((224, 224)),
-            T.ToTensor(),
-            T.Normalize([.485, .456, .406], [.229, .224, .225])
-        ])
-        arts["use_cnn"]   = True
-        arts["cnn_error"] = None
-
+            T.Resize((224,224)), T.ToTensor(),
+            T.Normalize([.485,.456,.406],[.229,.224,.225])])
+        arts["use_cnn"] = True; arts["cnn_error"] = None
     except Exception as e:
-        arts["use_cnn"]   = False
-        arts["cnn_error"] = f"⚠️ CNN gagal dimuat: {str(e)[:200]}"
-
+        arts["use_cnn"] = False
+        arts["cnn_error"] = f"⚠️ CNN failed to load: {str(e)[:200]}"
 
 def predict(img_bgr, arts):
-    """
-    Pipeline prediksi:
-    1. Ekstrak fitur handcrafted (selalu)
-    2. Ekstrak fitur CNN jika use_cnn=True
-    3. Gabungkan → pastikan dimensi sesuai scaler
-    4. Scale → Select → Predict
-    """
-    hc    = extract_handcrafted(img_bgr).reshape(1, -1)  # (1, 246)
+    hc    = extract_handcrafted(img_bgr).reshape(1,-1)
     n_exp = arts.get("expected_features", 1526)
-
     if arts.get("use_cnn") and arts.get("cnn") is not None:
         import torch
-        pil   = Image.fromarray(cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB))
-        inp   = arts["cnn_transform"](pil).unsqueeze(0)
-        with torch.no_grad():
-            cnn_f = arts["cnn"](inp).numpy()          # (1, 1280)
-        feats = np.concatenate([hc, cnn_f], axis=1)  # (1, 1526)
+        pil  = Image.fromarray(cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB))
+        inp  = arts["cnn_transform"](pil).unsqueeze(0)
+        with torch.no_grad(): cnn_f = arts["cnn"](inp).numpy()
+        feats = np.concatenate([hc, cnn_f], axis=1)
     else:
-        feats = hc                                    # (1, 246)
-
-    # ── Dimensi check — jika masih tidak cocok, pad/trim ─────
+        feats = hc
     actual = feats.shape[1]
     if actual != n_exp:
-        if actual < n_exp:
-            # Pad dengan nol (rare case)
-            pad   = np.zeros((1, n_exp - actual))
-            feats = np.concatenate([feats, pad], axis=1)
-        else:
-            # Trim (rare case)
-            feats = feats[:, :n_exp]
-
+        if actual < n_exp: feats = np.concatenate([feats, np.zeros((1,n_exp-actual))], axis=1)
+        else:              feats = feats[:,:n_exp]
     scaled   = arts["scaler"].transform(feats)
     selected = arts["selector"].transform(scaled)
-
     if arts["has_proba"]:
         proba = arts["model"].predict_proba(selected)[0]
     else:
         pred  = int(arts["model"].predict(selected)[0])
         proba = np.zeros(len(CLASS_NAMES)); proba[pred] = 1.0
-
     idx = int(np.argmax(proba))
     return CLASS_NAMES[idx], proba, idx
 
@@ -533,153 +363,231 @@ def render_prob_bars(proba):
     s_idx = np.argsort(proba)[::-1]
     html  = '<div class="prob-wrap">'
     for rank, i in enumerate(s_idx):
-        name  = DISEASE_DB[CLASS_NAMES[i]]["name_id"]
+        name  = DISEASE_DB[CLASS_NAMES[i]]["name"]
         color = DISEASE_DB[CLASS_NAMES[i]]["color"]
         pct   = proba[i]*100
         bold  = "font-weight:800;" if rank==0 else ""
-        html += f"""
-        <div class="prob-row">
-          <span class="prob-lbl" style="{bold}">{name[:22]}</span>
-          <div class="prob-bg">
-            <div class="prob-fill" style="width:{pct:.1f}%;background:{color};"></div>
-          </div>
-          <span class="prob-pct">{pct:.1f}%</span>
-        </div>"""
+        html += (f'<div class="prob-row">'
+                 f'<span class="prob-lbl" style="{bold}">{name[:24]}</span>'
+                 f'<div class="prob-bg"><div class="prob-fill" '
+                 f'style="width:{pct:.1f}%;background:{color};"></div></div>'
+                 f'<span class="prob-pct">{pct:.1f}%</span></div>')
     return html + "</div>"
 
-def make_pie(proba):
-    names  = [DISEASE_DB[c]["name_id"] for c in CLASS_NAMES]
-    colors = [DISEASE_DB[c]["color"]   for c in CLASS_NAMES]
-    fig, ax = plt.subplots(figsize=(4.5, 3.8))
-    fig.patch.set_facecolor("none"); ax.set_facecolor("none")
-    wedges, _, autos = ax.pie(
-        proba, colors=colors, autopct=lambda p: f"{p:.1f}%" if p>3 else "",
-        startangle=130, pctdistance=.72,
-        wedgeprops=dict(linewidth=2, edgecolor="white")
-    )
-    for a in autos: a.set_fontsize(8); a.set_color("white"); a.set_fontweight("bold")
-    ax.legend(wedges,[n[:18] for n in names], loc="lower center",
-              bbox_to_anchor=(.5,-.28), ncol=2, fontsize=7,
-              framealpha=0, labelcolor="#0d2b1a")
-    plt.tight_layout()
-    buf = BytesIO(); plt.savefig(buf,format="png",dpi=150,bbox_inches="tight",
-                                  facecolor="none",transparent=True); plt.close(); buf.seek(0)
-    return buf
+def make_result_figure(img_bgr, proba, pred_cls, conf, elapsed_ms):
+    """
+    Single publication-ready figure:
+    Col 0-1 : Input image (tall)
+    Col 2-3 : Horizontal bar chart
+    Col 4   : Preprocessing steps (stacked 2×2)
+    All in ONE frame → clean single screenshot for journal.
+    """
+    names  = [DISEASE_DB[c]["name"]  for c in CLASS_NAMES]
+    colors = [DISEASE_DB[c]["color"] for c in CLASS_NAMES]
+    info   = DISEASE_DB[pred_cls]
 
-def make_prep_steps(img_bgr):
-    rgb  = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+    fig = plt.figure(figsize=(18, 5.5), facecolor="#fafdf7")
+    gs  = fig.add_gridspec(2, 9, hspace=0.5, wspace=0.4,
+                            left=0.03, right=0.97, top=0.88, bottom=0.10)
+
+    # ── A: Input image ────────────────────────────────────────
+    ax_img = fig.add_subplot(gs[:, 0:2])
+    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+    ax_img.imshow(img_rgb)
+    ax_img.set_title(f"Input Image\n({img_rgb.shape[1]}×{img_rgb.shape[0]}px)",
+                     fontsize=9, fontweight="bold", color="#0d1f14", pad=5)
+    ax_img.axis("off")
+    # small caption below image
+    ax_img.text(0.5, -0.04,
+                f"Prediction: {info['name']}  |  Confidence: {conf*100:.1f}%  |  {elapsed_ms:.0f} ms",
+                transform=ax_img.transAxes, ha="center", va="top",
+                fontsize=7.5, color="#2d8653", fontstyle="italic")
+
+    # ── B: Horizontal bar chart ───────────────────────────────
+    ax_bar = fig.add_subplot(gs[:, 2:5])
+    s_idx = np.argsort(proba)
+    bnames = [names[i]  for i in s_idx]
+    bcolor = [colors[i] for i in s_idx]
+    bvals  = [proba[i]*100 for i in s_idx]
+    bars   = ax_bar.barh(bnames, bvals, color=bcolor,
+                          edgecolor="white", linewidth=1.2, height=0.52)
+    for bar, val in zip(bars, bvals):
+        ax_bar.text(val + 0.6, bar.get_y() + bar.get_height()/2,
+                    f"{val:.1f}%", va="center", fontsize=9,
+                    fontweight="bold", color="#0d1f14")
+    ax_bar.set_xlim(0, 112)
+    ax_bar.set_xlabel("Confidence (%)", fontsize=9, color="#4a6b56")
+    ax_bar.set_title("Class Probability Distribution",
+                     fontsize=10, fontweight="bold", color="#0d1f14", pad=6)
+    ax_bar.spines[["top","right","left"]].set_visible(False)
+    ax_bar.tick_params(axis="y", labelsize=9)
+    ax_bar.tick_params(axis="x", labelsize=8)
+    ax_bar.set_facecolor("#fafdf7")
+    ax_bar.grid(axis="x", alpha=0.22, linestyle="--")
+
+    # ── C: Preprocessing pipeline (2×2 grid) ─────────────────
     rsz  = cv2.resize(img_bgr, (128,128))
     hsv  = cv2.cvtColor(rsz, cv2.COLOR_BGR2HSV)
     cl   = cv2.createCLAHE(2.0,(8,8)); hsv[:,:,2]=cl.apply(hsv[:,:,2])
     enh  = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
     blr  = cv2.GaussianBlur(enh,(3,3),1)
     gray = cv2.cvtColor(blr, cv2.COLOR_BGR2GRAY)
-    steps = [(rgb,"① Original",None),
-             (cv2.cvtColor(enh,cv2.COLOR_BGR2RGB),"② CLAHE",None),
-             (cv2.cvtColor(blr,cv2.COLOR_BGR2RGB),"③ Gaussian Blur",None),
-             (gray,"④ Grayscale (LBP)","gray")]
-    fig, axes = plt.subplots(1,4,figsize=(12,3)); fig.patch.set_facecolor("#fafdf7")
-    for ax,(im,title,cmap) in zip(axes,steps):
-        ax.imshow(im,cmap=cmap); ax.set_title(title,fontsize=9,fontweight="bold",color="#0d2b1a"); ax.axis("off")
-    plt.tight_layout()
-    buf = BytesIO(); plt.savefig(buf,format="png",dpi=140,bbox_inches="tight",facecolor="#fafdf7"); plt.close(); buf.seek(0)
+
+    prep = [
+        (cv2.cvtColor(rsz, cv2.COLOR_BGR2RGB), "① Resize\n128×128",   None,   (0, 5)),
+        (cv2.cvtColor(enh, cv2.COLOR_BGR2RGB), "② CLAHE\nEnhancement",None,   (0, 6)),
+        (cv2.cvtColor(blr, cv2.COLOR_BGR2RGB), "③ Gaussian\nBlur",    None,   (1, 5)),
+        (gray,                                  "④ Grayscale\n(LBP/GLCM)","gray",(1, 6)),
+    ]
+    # Also add HSV Color Hist step
+    hsv_vis = cv2.cvtColor(blr, cv2.COLOR_BGR2HSV)
+
+    for im, title, cmap, (row, col) in prep:
+        ax = fig.add_subplot(gs[row, col])
+        ax.imshow(im, cmap=cmap)
+        ax.set_title(title, fontsize=7.5, fontweight="bold",
+                     color="#0d1f14", pad=3, linespacing=1.3)
+        ax.axis("off")
+
+    # Feature bar (right-most)
+    ax_feat = fig.add_subplot(gs[:, 7:9])
+    feat_names  = ["LBP\nMulti-R", "GLCM\n3×4", "Gabor\n3×4", "Color\nHSV", "EfficientNet\nCNN"]
+    feat_vals   = [54, 72, 24, 96, 1280]
+    feat_colors = ["#2d8653","#52b788","#95d5b2","#d8f3dc","#1a5c38"]
+    bar2 = ax_feat.barh(feat_names, feat_vals, color=feat_colors,
+                         edgecolor="white", linewidth=1, height=0.55)
+    for b, v in zip(bar2, feat_vals):
+        ax_feat.text(v+5, b.get_y()+b.get_height()/2, f"{v}",
+                     va="center", fontsize=8.5, fontweight="bold", color="#0d1f14")
+    ax_feat.set_xlim(0, 1500)
+    ax_feat.set_xlabel("No. of Features", fontsize=8, color="#4a6b56")
+    ax_feat.set_title("Feature\nExtraction",
+                      fontsize=9.5, fontweight="bold", color="#0d1f14", pad=4)
+    ax_feat.spines[["top","right","left"]].set_visible(False)
+    ax_feat.tick_params(axis="y", labelsize=8.5)
+    ax_feat.tick_params(axis="x", labelsize=7.5)
+    ax_feat.set_facecolor("#fafdf7")
+    ax_feat.grid(axis="x", alpha=0.22, linestyle="--")
+
+    # ── Super title ───────────────────────────────────────────
+    fig.suptitle(
+        f"DurianAI  ·  Durian Leaf Disease Detection  |  "
+        f"Detected: {info['name']}  (Confidence: {conf*100:.1f}%)  |  "
+        f"Total Features: 1,526  ·  Test Accuracy: 96.23%",
+        fontsize=9.5, color="#1a5c38", fontweight="bold", y=0.97
+    )
+
+    buf = BytesIO()
+    plt.savefig(buf, format="png", dpi=160, bbox_inches="tight", facecolor="#fafdf7")
+    plt.close(); buf.seek(0)
     return buf
 
 # ── Sidebar ───────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## 🌿 DurianAI")
     st.markdown("---")
-    st.markdown("### 📊 Performa Model")
-    metrics_side = [("96.23%","Akurasi","Clean Pipeline"),
-                    ("0.9972","ROC-AUC","Macro OvR"),
-                    ("0.9573","F1-Score","Macro Avg"),
-                    ("5 Kelas","Dataset","Penyakit & Sehat")]
-    for val, lbl, sub in metrics_side:
-        st.markdown(f"""<div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
-            border-radius:10px;padding:10px 14px;margin:5px 0;">
-            <div style="font-size:.7rem;opacity:.6;text-transform:uppercase;letter-spacing:1px;font-weight:600;">{lbl}</div>
-            <div style="font-size:1.35rem;font-weight:800;color:#7dffa8;">{val}</div>
-            <div style="font-size:.7rem;opacity:.55;">{sub}</div></div>""", unsafe_allow_html=True)
+    st.markdown("### 📊 Model Performance")
+    for val, lbl, sub in [
+        ("96.23%",   "Accuracy",   "Clean Pipeline Validation"),
+        ("0.9972",   "ROC-AUC",    "Macro One-vs-Rest"),
+        ("0.9573",   "F1-Score",   "Macro Average"),
+        ("5 Classes","Dataset",    "Disease & Healthy"),
+    ]:
+        st.markdown(
+            f"""<div style="background:rgba(255,255,255,.08);border:1px solid
+            rgba(255,255,255,.12);border-radius:10px;padding:10px 14px;margin:5px 0;">
+            <div style="font-size:.68rem;opacity:.6;text-transform:uppercase;
+            letter-spacing:1px;font-weight:600;">{lbl}</div>
+            <div style="font-size:1.32rem;font-weight:800;color:#7dffa8;">{val}</div>
+            <div style="font-size:.68rem;opacity:.55;">{sub}</div></div>""",
+            unsafe_allow_html=True)
     st.markdown("---")
-    st.markdown("### 🔬 Metode")
-    for m in ["LBP Multi-Radius (R=1,2,3)","GLCM (3×4 matriks)","Gabor Filter (3 frek×4 arah)",
-              "Color Histogram HSV","EfficientNet-B0 Fine-tuned"]:
-        st.markdown(f"<div style='font-size:.8rem;padding:3px 0;opacity:.82;'>• {m}</div>",unsafe_allow_html=True)
+    st.markdown("### 🔬 Feature Extraction")
+    for m in ["LBP Multi-Radius (R=1,2,3) — 54",
+              "GLCM (3 dist × 4 angles) — 72",
+              "Gabor Filter (3×4) — 24",
+              "Color Histogram HSV — 96",
+              "EfficientNet-B0 Fine-tuned — 1280",
+              "──────────────────",
+              "Total: 1,526 → SelectKBest 500"]:
+        st.markdown(f"<div style='font-size:.77rem;padding:2px 0;opacity:.82;'>• {m}</div>",
+                    unsafe_allow_html=True)
     st.markdown("---")
-    st.markdown("### 🌿 5 Kelas Deteksi")
+    st.markdown("### 🌿 Disease Classes")
     for cls in CLASS_NAMES:
         d = DISEASE_DB[cls]
-        st.markdown(f"""<div style='display:flex;align-items:center;gap:8px;padding:4px 0;font-size:.8rem;'>
-            <span style='width:10px;height:10px;border-radius:50%;background:{d["color"]};
-            flex-shrink:0;display:inline-block;'></span>{d["name_id"]}</div>""",unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='display:flex;align-items:center;gap:8px;padding:4px 0;font-size:.79rem;'>"
+            f"<span style='width:9px;height:9px;border-radius:50%;background:{d['color']};"
+            f"flex-shrink:0;display:inline-block;'></span>{d['name']}</div>",
+            unsafe_allow_html=True)
     st.markdown("---")
-    st.markdown("<div style='font-size:.7rem;opacity:.45;text-align:center;'>Penelitian Deteksi Penyakit<br>Daun Durian · 2024–2025</div>",unsafe_allow_html=True)
+    st.markdown(
+        "<div style='font-size:.68rem;opacity:.45;text-align:center;'>"
+        "Durian Leaf Disease Detection<br>Research · 2024–2025</div>",
+        unsafe_allow_html=True)
 
 # ── Hero ──────────────────────────────────────────────────────
 st.markdown("""
 <div class="hero">
   <div class="hero-title">🌿 DurianAI</div>
-  <p class="hero-sub">Sistem Deteksi Penyakit Daun Durian — Upload foto daun untuk diagnosis otomatis berbasis Machine Learning</p>
+  <p class="hero-sub">Durian Leaf Disease Detection System — Upload a leaf image for automated ML-based diagnosis</p>
   <div class="hero-badges">
-    <span class="badge">🎯 Akurasi 96.23%</span>
-    <span class="badge">⚡ EfficientNet + SVM/RF</span>
-    <span class="badge">🔬 5 Kategori Penyakit</span>
-    <span class="badge">📊 LBP + GLCM + Gabor</span>
+    <span class="badge">🎯 Accuracy 96.23%</span>
+    <span class="badge">⚡ EfficientNet-B0 + SVM/RF</span>
+    <span class="badge">🔬 5 Disease Categories</span>
+    <span class="badge">📊 LBP + GLCM + Gabor + CNN</span>
   </div>
 </div>""", unsafe_allow_html=True)
 
 # ── Metric Strip ──────────────────────────────────────────────
 st.markdown('<div class="metrics-row">' + "".join([
-    f'<div class="metric-card"><div class="m-val">{v}</div><div class="m-lbl">{l}</div><div class="m-sub">{s}</div></div>'
-    for v,l,s in [("96.23%","Test Accuracy","Clean Pipeline Valid."),
-                   ("0.9972","ROC-AUC","Macro One-vs-Rest"),
-                   ("0.9573","Macro F1","Rata-rata semua kelas"),
-                   ("4/5","Bias Test","Lulus diagnostic"),
-                   ("1526","Total Fitur","HC + CNN")]
+    f'<div class="metric-card"><div class="m-val">{v}</div>'
+    f'<div class="m-lbl">{l}</div><div class="m-sub">{s}</div></div>'
+    for v,l,s in [
+        ("96.23%", "Test Accuracy",  "Clean Pipeline Validation"),
+        ("0.9972",  "ROC-AUC",        "Macro One-vs-Rest"),
+        ("0.9573",  "Macro F1",       "Average all classes"),
+        ("4/5",     "Bias Test",      "Diagnostic passed"),
+        ("1,526",   "Total Features", "HC + CNN combined"),
+    ]
 ]) + '</div>', unsafe_allow_html=True)
 
-# ── Load model ────────────────────────────────────────────────
-with st.spinner("⏳ Memuat model..."):
+# ── Load Model ────────────────────────────────────────────────
+with st.spinner("⏳ Loading model..."):
     arts = load_artifacts()
 
 if not arts["ok"]:
-    st.error(f"❌ Gagal memuat model: `{arts.get('error','unknown')}`")
-    st.info("""**File yang dibutuhkan di folder `models/`:**
-- `svm_model.pkl`
-- `scaler.pkl`
-- `selector.pkl`
-- `efficientnet_state_dict.pth`""")
+    st.error(f"❌ Failed to load model: `{arts.get('error','unknown')}`")
+    st.info("Required files in `models/`: `svm_model.pkl`, `scaler.pkl`, `selector.pkl`, `efficientnet_state_dict.pth`")
     st.stop()
 
-# ── Tampilkan error CNN jika ada (STOP agar tidak crash saat prediksi) ──
 if arts.get("cnn_error"):
     st.error(arts["cnn_error"])
-    st.info(f"""**Cara mengatasi:**
-1. Pastikan file `efficientnet_state_dict.pth` ada di folder `models/`
-2. File ini harus di-download dari Google Drive: `dataset_duren/streamlit_models/efficientnet_state_dict.pth`
-3. Upload ke GitHub repo di folder `models/`
-4. Ukuran file: ~15.6 MB
+    st.info(f"""**How to fix:**
+1. Ensure `efficientnet_state_dict.pth` exists in the `models/` folder
+2. Download from Google Drive: `dataset_duren/streamlit_models/efficientnet_state_dict.pth`
+3. Upload to GitHub repo under `models/`  (file size: ~15.6 MB)
 
-> Scaler dilatih dengan **{arts.get('expected_features', 1526)} fitur** ({arts.get('n_hc',246)} HC + {arts.get('n_cnn',1280)} CNN).
-> Tanpa CNN extractor, prediksi tidak bisa dijalankan.""")
+> Scaler was trained with **{arts.get('expected_features',1526)} features** \
+({arts.get('n_hc',246)} handcrafted + {arts.get('n_cnn',1280)} CNN).""")
     st.stop()
 
-mode_badge = "🤖 " + arts.get("model_type","Model")
-if arts.get("use_cnn"):
-    mode_badge += " + EfficientNet-B0 Fine-tuned"
-    n_f = arts.get("expected_features", 1526)
-    st.success(f"✅ Model siap: **{mode_badge}** | {n_f} fitur total")
-else:
-    mode_badge += " + Handcrafted Only"
-    st.success(f"✅ Model siap: **{mode_badge}**")
+m_type = arts.get("model_type","Model")
+cnn_ok = arts.get("use_cnn", False)
+st.success(
+    f"✅ Model ready: **{m_type}** + "
+    f"{'EfficientNet-B0 Fine-tuned' if cnn_ok else 'Handcrafted Only'} "
+    f"| {arts.get('expected_features',1526)} features total"
+)
 
 # ── Upload ────────────────────────────────────────────────────
-st.markdown('<div class="sec-title">Upload Gambar Daun Durian</div>', unsafe_allow_html=True)
+st.markdown('<div class="sec-title">Upload Durian Leaf Image</div>', unsafe_allow_html=True)
 uploaded = st.file_uploader(
-    "Pilih satu atau beberapa gambar (JPG / PNG / JPEG)",
+    "Select one or more images (JPG / PNG / JPEG)",
     type=["jpg","jpeg","png"],
     accept_multiple_files=True,
-    help="Pastikan foto daun jelas, pencahayaan cukup, dan daun terlihat penuh"
+    help="Ensure the leaf is clearly visible with adequate lighting"
 )
 
 if not uploaded:
@@ -687,19 +595,22 @@ if not uploaded:
     <div style="background:#e8f7ee;border:1.5px dashed #2d8653;border-radius:16px;
          padding:3rem;text-align:center;color:#2d6a4f;margin-top:1rem;">
       <div style="font-size:3.5rem;margin-bottom:.8rem;">🍃</div>
-      <div style="font-size:1.1rem;font-weight:700;margin-bottom:.4rem;">Belum ada gambar</div>
+      <div style="font-size:1.1rem;font-weight:700;margin-bottom:.4rem;">No image uploaded yet</div>
       <div style="font-size:.88rem;opacity:.75;">
-        Upload foto daun durian di atas untuk memulai analisis<br>
-        Format: JPG, PNG, JPEG — bisa multiple files sekaligus
+        Upload a durian leaf image above to start the analysis<br>
+        Formats: JPG, PNG, JPEG — multiple files supported
       </div>
     </div>""", unsafe_allow_html=True)
 
-    st.markdown('<div class="sec-title">Cara Penggunaan</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sec-title">How to Use</div>', unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
     for col, icon, title, desc in [
-        (c1,"📸","1. Upload Foto","Foto daun durian dengan jelas. Satu atau banyak gambar sekaligus."),
-        (c2,"⚡","2. Analisis Otomatis","Sistem mengekstrak 1526 fitur tekstur, warna, dan pola CNN secara otomatis."),
-        (c3,"📊","3. Lihat Hasil","Diagnosis lengkap + probabilitas + rekomendasi penanganan spesifik."),
+        (c1, "📸", "1. Upload Image",
+         "Take a clear photo of the durian leaf. Single or multiple images at once."),
+        (c2, "⚡", "2. Automatic Analysis",
+         "The system extracts 1,526 features (texture, color, CNN patterns) automatically."),
+        (c3, "📊", "3. View Results",
+         "Get full diagnosis with confidence score, probabilities, and treatment recommendations."),
     ]:
         col.markdown(f"""<div class="guide-card"><div class="guide-icon">{icon}</div>
             <div class="guide-title">{title}</div>
@@ -709,84 +620,122 @@ else:
     results_summary = []
 
     for i, uf in enumerate(uploaded):
-        st.markdown(f'<div class="sec-title">Analisis — {uf.name}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="sec-title">Analysis — {uf.name}</div>',
+                    unsafe_allow_html=True)
 
         raw   = np.frombuffer(uf.read(), dtype=np.uint8)
         img_b = cv2.imdecode(raw, cv2.IMREAD_COLOR)
-        img_r = cv2.cvtColor(img_b, cv2.COLOR_BGR2RGB)
-
         if img_b is None:
-            st.error(f"❌ Gagal membaca gambar: {uf.name}"); continue
+            st.error(f"❌ Failed to read image: {uf.name}"); continue
 
-        with st.spinner(f"Menganalisis {uf.name}..."):
+        with st.spinner(f"Analyzing {uf.name}..."):
             t0 = time.time()
             pred_cls, proba, pred_idx = predict(img_b, arts)
             elapsed = time.time() - t0
 
-        info = DISEASE_DB[pred_cls]
-        conf = proba[pred_idx]
+        info      = DISEASE_DB[pred_cls]
+        conf      = proba[pred_idx]
+        sev_label = SEV_LABEL.get(info["sev_class"], "Normal")
+        sev_color = {"Normal":"#2d8653","Moderate":"#b06000","High":"#b02020"}.get(sev_label,"#2d8653")
 
-        # ── Layout ────────────────────────────────────────────
-        col_img, col_res, col_pie = st.columns([1.1, 1.6, 1.0])
+        # ── ROW 1: image | result card | prob bars ─────────────
+        col_img, col_card, col_bars = st.columns([1.1, 1.25, 1.4])
 
         with col_img:
-            st.image(img_r, caption=uf.name, use_container_width=True)
-            st.markdown(f"<div style='font-size:.74rem;color:#4a6b56;text-align:center;margin-top:4px;'>"
-                        f"{img_r.shape[1]}×{img_r.shape[0]}px · {elapsed*1000:.0f}ms</div>",
-                        unsafe_allow_html=True)
+            img_rgb = cv2.cvtColor(img_b, cv2.COLOR_BGR2RGB)
+            st.image(img_rgb, caption=uf.name, use_container_width=True)
+            st.markdown(
+                f"<div style='font-size:.72rem;color:#4a6b56;text-align:center;margin-top:3px;'>"
+                f"{img_rgb.shape[1]}×{img_rgb.shape[0]}px · {elapsed*1000:.0f} ms</div>",
+                unsafe_allow_html=True)
 
-        with col_res:
-            sev_color = {"Normal":"#2d8653","Sedang":"#c07a10","Tinggi":"#c03020"}.get(info["severity"],"#2d8653")
+        with col_card:
             st.markdown(f"""
-            <div class="result-card">
-              <div class="result-icon">{info["emoji"]}</div>
-              <div class="result-tag">Hasil Deteksi</div>
-              <div class="result-name">{info["name_id"]}</div>
-              <div class="result-en">{info["name_en"]}</div>
-              <div class="result-conf">{conf*100:.1f}%</div>
-              <div class="result-conf-lbl">Tingkat Keyakinan</div>
-              <div class="sev-chip">⚠️ Keparahan:
-                <span style="color:{sev_color};background:#fff;padding:2px 10px;
-                border-radius:100px;margin-left:6px;font-weight:800;">{info["severity"]}</span>
+            <div style="background:linear-gradient(135deg,#0d2b1a,#2d8653);
+                 border-radius:16px;padding:1.5rem 1.5rem;color:#fff;text-align:center;
+                 box-shadow:0 6px 32px rgba(13,43,26,.25);">
+              <div style="font-size:2.2rem;margin-bottom:.3rem;">{info["emoji"]}</div>
+              <div style="font-size:.62rem;text-transform:uppercase;letter-spacing:1.5px;
+                   opacity:.7;font-weight:600;margin-bottom:.2rem;">Detection Result</div>
+              <div style="font-family:'DM Serif Display',serif;font-size:1.2rem;
+                   line-height:1.2;margin-bottom:.12rem;">{info["name"]}</div>
+              <div style="font-size:.73rem;opacity:.62;margin-bottom:.9rem;font-style:italic;">
+                {info["pathogen"]}</div>
+              <div style="font-family:'DM Serif Display',serif;font-size:2.7rem;
+                   color:#7dffa8;line-height:1;">{conf*100:.1f}%</div>
+              <div style="font-size:.62rem;text-transform:uppercase;letter-spacing:1px;
+                   opacity:.7;margin-top:.15rem;">Confidence Score</div>
+              <div style="margin-top:.75rem;">
+                <span style="background:rgba(255,255,255,.14);border:1px solid
+                     rgba(255,255,255,.24);padding:4px 13px;border-radius:100px;
+                     font-size:.72rem;font-weight:700;">
+                  Severity:
+                  <span style="color:{sev_color};background:#fff;padding:1px 9px;
+                       border-radius:100px;margin-left:4px;font-weight:800;">{sev_label}</span>
+                </span>
               </div>
             </div>""", unsafe_allow_html=True)
-            st.markdown("**Probabilitas semua kelas:**")
+
+        with col_bars:
+            st.markdown("**Class Probabilities:**")
             st.markdown(render_prob_bars(proba), unsafe_allow_html=True)
 
-        with col_pie:
-            st.image(make_pie(proba), use_container_width=True)
+        # ── ROW 2: SINGLE FRAME FIGURE (journal-ready) ─────────
+        st.markdown(
+            '<div class="sec-title">Combined Result Figure — Screenshot Ready for Journal</div>',
+            unsafe_allow_html=True)
+        fig_buf = make_result_figure(img_b, proba, pred_cls, conf, elapsed*1000)
+        st.image(fig_buf, use_container_width=True)
+        st.caption(
+            "📸 Single-frame figure combining: input image · class probability chart · "
+            "preprocessing pipeline · feature extraction summary. "
+            "Designed for direct screenshot inclusion in research publications."
+        )
 
-        # ── Detail & Penanganan ───────────────────────────────
-        with st.expander("📋 Detail Penyakit & Rekomendasi Penanganan", expanded=True):
+        # ── EXPANDER: Disease Detail ────────────────────────────
+        with st.expander("📋 Disease Details & Treatment Recommendations", expanded=False):
             d1, d2 = st.columns(2)
             with d1:
                 st.markdown(f"""<div class="disease-panel {info['sev_class']}">
-                  <h4>{info["emoji"]} {info["name_id"]}</h4>
-                  <p><strong>Patogen:</strong> {info["pathogen"]}</p>
-                  <p><strong>Gejala:</strong><br>{info["symptoms"]}</p>
-                  <p><strong>Penyebab Infeksi:</strong><br>{info["cause"]}</p>
-                  <p><strong>🛡️ Pencegahan:</strong><br>{info["prevention"]}</p>
+                  <h4>{info["emoji"]} {info["name"]}</h4>
+                  <p><strong>Pathogen:</strong> <em>{info["pathogen"]}</em></p>
+                  <p><strong>Symptoms:</strong><br>{info["symptoms"]}</p>
+                  <p><strong>Cause of Infection:</strong><br>{info["cause"]}</p>
+                  <p><strong>🛡️ Prevention:</strong><br>{info["prevention"]}</p>
                 </div>""", unsafe_allow_html=True)
             with d2:
-                items = "".join(f'<div class="treat-item"><span class="treat-icon">✓</span>{t}</div>'
-                                for t in info["treatment"])
+                items = "".join(
+                    f'<div class="treat-item"><span class="treat-ok">✓</span>{t}</div>'
+                    for t in info["treatment"])
                 st.markdown(f"""<div class="disease-panel {info['sev_class']}">
-                  <h4>💊 Langkah Penanganan</h4>{items}</div>""", unsafe_allow_html=True)
+                  <h4>💊 Treatment Steps</h4>{items}</div>""", unsafe_allow_html=True)
 
-        # ── Preprocessing Viz ─────────────────────────────────
-        with st.expander("🔬 Visualisasi Langkah Preprocessing", expanded=False):
-            st.image(make_prep_steps(img_b), use_container_width=True)
-            st.markdown("<div style='font-size:.8rem;color:#4a6b56;line-height:1.8;'>"
-                        "<strong>Pipeline:</strong> Resize 128×128 → CLAHE (contrast enhancement) "
-                        "→ Gaussian Blur (noise reduction) → Grayscale (input LBP/GLCM/Gabor) "
-                        "+ HSV (Color Histogram)</div>", unsafe_allow_html=True)
+        # ── EXPANDER: Preprocessing ────────────────────────────
+        with st.expander("🔬 Preprocessing Pipeline Visualization", expanded=False):
+            rsz = cv2.resize(img_b,(128,128))
+            hsv = cv2.cvtColor(rsz, cv2.COLOR_BGR2HSV)
+            cl  = cv2.createCLAHE(2.0,(8,8)); hsv[:,:,2]=cl.apply(hsv[:,:,2])
+            enh = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+            blr = cv2.GaussianBlur(enh,(3,3),1)
+            gray= cv2.cvtColor(blr, cv2.COLOR_BGR2GRAY)
+            p1,p2,p3,p4 = st.columns(4)
+            p1.image(cv2.cvtColor(rsz,cv2.COLOR_BGR2RGB), caption="① Resize 128×128",    use_container_width=True)
+            p2.image(cv2.cvtColor(enh,cv2.COLOR_BGR2RGB), caption="② CLAHE Enhancement", use_container_width=True)
+            p3.image(cv2.cvtColor(blr,cv2.COLOR_BGR2RGB), caption="③ Gaussian Blur",      use_container_width=True)
+            p4.image(gray, caption="④ Grayscale (LBP/GLCM)", use_container_width=True, clamp=True)
+            st.markdown(
+                "<div style='font-size:.82rem;color:#4a6b56;line-height:1.8;margin-top:.5rem;'>"
+                "<strong>Pipeline:</strong> Resize 128×128 → CLAHE (local contrast enhancement) "
+                "→ Gaussian Blur (noise reduction) → Grayscale (for LBP, GLCM, Gabor) "
+                "+ HSV (for Color Histogram)</div>", unsafe_allow_html=True)
 
         results_summary.append({
-            "File": uf.name,
-            "Prediksi": info["name_id"],
-            "Keyakinan": f"{conf*100:.1f}%",
-            "Keparahan": info["severity"],
-            "Patogen": info["pathogen"]
+            "File"       : uf.name,
+            "Prediction" : info["name"],
+            "Confidence" : f"{conf*100:.1f}%",
+            "Severity"   : sev_label,
+            "Pathogen"   : info["pathogen"],
+            "Time (ms)"  : f"{elapsed*1000:.0f}",
         })
 
         if i < len(uploaded)-1:
@@ -794,6 +743,7 @@ else:
 
     # ── Summary Table ─────────────────────────────────────────
     if len(uploaded) > 1:
-        st.markdown('<div class="sec-title">Ringkasan Semua Gambar</div>', unsafe_allow_html=True)
+        st.markdown('<div class="sec-title">Summary — All Analyzed Images</div>',
+                    unsafe_allow_html=True)
         import pandas as pd
         st.dataframe(pd.DataFrame(results_summary), use_container_width=True, hide_index=True)
